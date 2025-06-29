@@ -1,0 +1,56 @@
+name: "Bump and Build"
+description: "Bump version with Poetry, commit+tag+push, and build archive"
+inputs:
+  update_type:
+    description: "Version bump type (patch, minor, major)"
+    required: true
+  access_token:
+    description: "GitHub token for pushing commit and tag"
+    required: true
+  python_version:
+    description: "Python version to set up"
+    required: false
+    default: "3.11"
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python_version }}
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        virtualenvs-create: false
+    - name: Bump version
+      id: bump
+      shell: bash
+      run: |
+        poetry version ${{ inputs.update_type }}
+        new_version=$(poetry version | awk '{print $2}')
+        echo "new_version=$new_version" >> "$GITHUB_OUTPUT"
+    - name: Commit version bump and tag
+      shell: bash
+      run: |
+        git config user.name "${{ github.actor }}"
+        git config user.email "${{ github.actor }}@users.noreply.github.com"
+        git commit -am "Bump ${{ inputs.update_type }} version to ${{ steps.bump.outputs.new_version }}"
+        git tag "v${{ steps.bump.outputs.new_version }}"
+        git remote set-url origin https://x-access-token:${{ inputs.access_token }}@github.com/${{ github.repository }}.git
+        git push origin HEAD --tags
+    - name: Build library
+      run: poetry build --format sdist
+    - name: Archive library
+      uses: actions/upload-artifact@v4
+      with:
+        name: library-${{ steps.bump.outputs.new_version }}
+        path: dist/*.tar.gz
+
+outputs:
+  new_version:
+    description: "The new version string"
+    value: ${{ steps.bump.outputs.new_version }}
