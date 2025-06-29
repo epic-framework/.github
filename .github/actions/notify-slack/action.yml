@@ -49,13 +49,18 @@ runs:
         
         case "$msg_type" in
           release-start)
-            text="⚙️ *Release started*: \`$repo@$ref\`\nTriggered by: \`$actor\`\nVersion bump: \`$version_bump\`$target_suffix\n🔗 <$run_url|View on GitHub>"
+            text="⚙️ *Release started*: \`$repo@$ref\`
+        Triggered by: \`$actor\`
+        Version bump: \`$version_bump\`$target_suffix
+        🔗 <$run_url|View on GitHub>"
             ;;
           release-done)
-            text="✅ *Published version $version* for \`$repo\`$target_suffix\n🔗 <$run_url|View on GitHub>"
+            text="✅ *Published version $version* for \`$repo\`$target_suffix
+        🔗 <$run_url|View on GitHub>"
             ;;
           release-error)
-            text="❌ *Release process failed* for \`$repo\`$target_suffix\nCheck logs: <$run_url>"
+            text="❌ *Release process failed* for \`$repo\`$target_suffix
+        Check logs: <$run_url>"
             ;;
           custom)
             text="$custom_text"
