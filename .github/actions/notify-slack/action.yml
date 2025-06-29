@@ -1,0 +1,71 @@
+name: "Notify Slack"
+description: "Send a formatted Slack message"
+inputs:
+  message_type:
+    required: true
+    description: "release-start | release-done | release-error | custom"
+    type: choice
+    options: ["release-start", "release-done", "release-error", "custom"]
+  webhook_url:
+    required: true
+  version:
+    description: "Optional version string (used in release-done)"
+    required: false
+    default: ""
+  version_bump:
+    description: "Optional bump type (e.g. patch, minor, major) for release-start"
+    required: false
+    default: ""
+  pypi_target:
+    description: "Optional PyPI target (e.g. Test PyPI or PyPI Prod)"
+    required: false
+    default: ""
+  custom_text:
+    description: "Custom Slack message if message_type is 'custom'"
+    required: false
+    default: ""
+runs:
+  using: "composite"
+  steps:
+    - shell: bash
+      run: |
+        set -euo pipefail
+        
+        msg_type="${{ inputs.message_type }}"
+        webhook_url="${{ inputs.webhook_url }}"
+        version="${{ inputs.version }}"
+        version_bump="${{ inputs.version_bump }}"
+        pypi_target="${{ inputs.pypi_target }}"
+        custom_text="${{ inputs.custom_text }}"
+        repo="${{ github.repository }}"
+        ref="${{ github.ref_name }}"
+        actor="${{ github.actor }}"
+        run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"        
+
+        target_suffix=""
+        if [[ "$pypi_target" == "Test PyPI" ]]; then
+          target_suffix=" (test pypi)"
+        fi
+        
+        case "$msg_type" in
+          release-start)
+            text="⚙️ *Release started*: \`$repo@$ref\`\nTriggered by: \`$actor\`\nVersion bump: \`$version_bump\`$target_suffix\n🔗 <$run_url|View on GitHub>"
+            ;;
+          release-done)
+            text="✅ *Published version $version* for \`$repo\`$target_suffix\n🔗 <$run_url|View on GitHub>"
+            ;;
+          release-error)
+            text="❌ *Release process failed* for \`$repo\`$target_suffix\nCheck logs: <$run_url>"
+            ;;
+          custom)
+            text="$custom_text"
+            ;;
+          *)
+            echo "Unknown message_type: $msg_type"
+            exit 1
+            ;;
+        esac
+        
+        curl -X POST -H 'Content-type: application/json' \
+          --data "$(jq -nc --arg text "$text" '{text: $text}')" \
+          "$webhook_url"
