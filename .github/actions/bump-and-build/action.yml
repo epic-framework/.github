@@ -43,6 +43,7 @@ runs:
         git remote set-url origin https://x-access-token:${{ inputs.access_token }}@github.com/${{ github.repository }}.git
         git push origin HEAD --tags
     - name: Build library
+      shell: bash
       run: poetry build --format sdist
     - name: Archive library
       uses: actions/upload-artifact@v4
