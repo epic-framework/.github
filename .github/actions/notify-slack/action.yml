@@ -3,9 +3,9 @@ description: "Send a formatted Slack message"
 inputs:
   message_type:
     required: true
-    description: "release-start | release-done | release-error | custom"
+    description: "release-start | release-done | release-error | release-cancelled | custom"
     type: choice
-    options: ["release-start", "release-done", "release-error", "custom"]
+    options: ["release-start", "release-done", "release-error", "release-cancelled", "custom"]
   webhook_url:
     required: true
   version:
@@ -60,6 +60,10 @@ runs:
             ;;
           release-error)
             text="❌ *Release process failed* for \`$repo\`$target_suffix
+        Check logs: <$run_url>"
+            ;;
+          release-cancelled)
+            text="🚫 *Release process cancelled* for \`$repo\`$target_suffix
         Check logs: <$run_url>"
             ;;
           custom)
